@@ -7,6 +7,9 @@ const CANNON = require('cannon')
 const TIME_STEP = 1.0 / 60.0 // seconds
 const MAX_SUB_STEPS = 1
 
+const qrx = require('gl-quat/rotateX')
+const qry = require('gl-quat/rotateY')
+const qrz = require('gl-quat/rotateZ')
 const perspective = require('gl-mat4/perspective')
 const shaders = require('./shaders/index')(gl)
 const geoms = require('./geoms/index')(gl)
@@ -16,10 +19,14 @@ const proj = new Float32Array(16)
 const view = new Float32Array(16)
 const lights = []
 
+// qrx(camera.rotation, camera.rotation, -Math.PI / 4)
+
 const getNodeList = scene.list(require('./node-sorter'))
 
 const world = new CANNON.World()
-world.gravity = new CANNON.Vec3(0, -9.82, 0)
+// world.gravity = new CANNON.Vec3(0, -9.82, 0)
+world.gravity.z = -9.82
+window.world = world
 
 function createSphere (options = {}) {
   const position = options.position || [0, 0, 0]
@@ -46,7 +53,21 @@ function createSphere (options = {}) {
 
 scene.add(Node({ light: [1, 0, 0] }))
 
-createSphere()
+world.addBody(new CANNON.Body({
+  mass: 0,
+  shape: new CANNON.Plane()
+}))
+
+createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 11] })
+createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 12] })
+createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 13] })
+createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 10] })
+createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 14] })
+createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 15] })
+createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 16] })
+createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 17] })
+createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 18] })
+createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 19] })
 
 function tick () {
   step()
@@ -61,12 +82,28 @@ function step () {
   camera.view(view)
   perspective(proj, Math.PI / 4, width / height, 0.1, 100)
 
-  scene.each(function (node) {
-    node.setPosition(Math.random(), Math.random(), Math.random())
-  })
-
   world.step(1 / 60)
-  console.log(b.position)
+
+  const nodes = getNodeList()
+
+  for (var i = 0; i < nodes.length; i++) {
+    var node = nodes[i]
+    var body = node.data.body
+    if (!body) continue
+
+    node.setRotation(
+      body.quaternion.x,
+      body.quaternion.y,
+      body.quaternion.z,
+      body.quaternion.w
+    )
+    node.setPosition(
+      body.position.x,
+      body.position.y,
+      body.position.z
+    )
+  }
+
   scene.tick()
 }
 
@@ -77,6 +114,8 @@ function render () {
   gl.viewport(0, 0, width, height)
   gl.clearColor(0, 0, 0, 1)
   gl.clear(gl.COLOR_BUFFER_BIT)
+  gl.enable(gl.DEPTH_TEST)
+  gl.enable(gl.CULL_FACE)
 
   const nodes = getNodeList()
   var currShad = null
@@ -111,6 +150,7 @@ function render () {
     }
 
     shad.uniforms.model = node.modelMatrix
+    shad.uniforms.normalMatrix = node.normalMatrix
     geom.draw()
   }
 }
