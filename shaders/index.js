@@ -7,6 +7,10 @@ module.exports = function (gl) {
     sphere: createShader(gl
       , glslify('./sphere.vert')
       , glslify('./sphere.frag')
+    ),
+    projectile: createShader(gl
+      , glslify('./sphere.vert')
+      , glslify('./projectile.frag')
     )
   }
 }

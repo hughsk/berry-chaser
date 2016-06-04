@@ -7,7 +7,7 @@ const Cube = require('primitive-cube')
 
 module.exports = function (gl) {
   return {
-    sphere: createGeom(gl, icosphere(2)),
+    sphere: createGeom(gl, icosphere(0)),
     box: createGeom(gl, Cube())
   }
 }

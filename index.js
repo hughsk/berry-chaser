@@ -13,7 +13,7 @@ const JUMP_TIMEOUT = 500
 const JUMP_RANGE = 0.25
 const AIR_CONTROL = 0.3
 const GRAVITY = -9.82 * 3
-const JUMP_FORCE = -1 * GRAVITY * 0.6
+const JUMP_FORCE = -1 * GRAVITY * 0.1
 
 const qrx = require('gl-quat/rotateX')
 const qry = require('gl-quat/rotateY')
@@ -144,7 +144,7 @@ function createBox (options = {}) {
   const dims = options.dims || [1, 1, 1]
   position[0] = position[0] - 0.5 * dims[0]
   position[1] = position[1] - 0.5 * dims[1]
-  position[2] = position[2] - 0.5 * dims[2]
+  position[2] = position[2] - 0.5 * dims[2] * -1
 
   const body = new CANNON.Body({
     mass: !isNum(options.mass) ? 1 : options.mass,
@@ -166,6 +166,41 @@ function createBox (options = {}) {
   return node
 }
 
+function createProjectile (options = {}) {
+  const position = options.position || [0, 0, 0]
+  const dims = options.dims || [0.5, 0.5, 0.5]
+  position[0] = position[0] - 0.5 * dims[0]
+  position[1] = position[1] - 0.5 * dims[1]
+  position[2] = position[2] - 0.5 * dims[2]
+
+  const body = new CANNON.Body({
+    mass: !isNum(options.mass) ? 0.5 : options.mass,
+    position: new CANNON.Vec3(position[0], position[1], position[2]),
+    shape: new CANNON.Box(new CANNON.Vec3(dims[0] * 0.5, dims[1] * 0.5, dims[2] * 0.5))
+  })
+
+  const d = options.direction || [0, 0, 0]
+
+  const direction = new CANNON.Vec3(d[0], d[1], d[2])
+  const velocity = options.velocity || 25
+  direction[2] = direction.z + 0.3
+  body.velocity = direction.unit().scale(velocity)
+  body.angularVelocity.set(Math.random(), Math.random(), Math.random()).scale(2)
+
+  const node = {
+    geom: geoms.box,
+    shader: shaders.projectile,
+    scale: dims,
+    body: body,
+    position: position
+  }
+
+  world.addBody(node.body)
+  scene.add(Node(node))
+
+  return node
+}
+
 scene.add(Node({ light: [1, 0, 0] }))
 
 world.addBody(new CANNON.Body({
@@ -173,12 +208,43 @@ world.addBody(new CANNON.Body({
   shape: new CANNON.Plane()
 }))
 
-createBox({ position: [0, 0, 1] })
-createBox({ position: [0, 1, 1] })
-createBox({ position: [0, 2, 1] })
-createBox({ position: [1, 3, 1], dims: [3, 1, 1] })
-createBox({ position: [3, 1, 1], dims: [1, 2, 1] })
-const player = createSphere({ position: [3, 3, 1] })
+const player = createSphere({ position: [3, 3, 1], mass: 0.3 })
+
+function createTurret (options) {
+  let position = options.position || [0, 0, 0]
+  let dims = options.dims || [1, 1, 10]
+  const tower = createBox({ position, mass: 0, dims })
+  tower.startFiring = function () {
+    tower.firing = true
+    tower._fire = setInterval(function () {
+      if (!tower.firing) return
+      const pos = tower.body.position.clone()
+      pos.z = dims[2] + 1
+      const body = player.body
+      let targetPos = body.position.clone()
+      targetPos = targetPos.vadd(body.velocity)
+      const direction = pos.vsub(targetPos).unit().scale(-1)
+      createProjectile({
+        mass: 10.00,
+        position: [pos.x, pos.y, pos.z],
+        direction: [direction.x, direction.y, direction.z]
+      })
+    }, 1000)
+  }
+
+  tower.stopFiring = function () {
+    tower.firing = false
+    clearInterval(tower._fire)
+  }
+
+  return tower
+}
+
+const t1 = createTurret({ position: [10, 10, 0] })
+const t2 = createTurret({ position: [-10, -10, 0] })
+
+t1.startFiring()
+t2.startFiring()
 
 game.control(player)
 
@@ -237,12 +303,12 @@ function render () {
 
   lights.length = 0
 
-  for (var i = 0; i < nodes.length; i++) {
+  for (let i = 0; i < nodes.length; i++) {
     var node = nodes[i]
     if (node.data.light) lights.push(node.data.light)
   }
 
-  for (var i = 0; i < nodes.length; i++) {
+  for (let i = 0; i < nodes.length; i++) {
     var node = nodes[i]
     var data = node.data
     var geom = data.geom
@@ -276,18 +342,17 @@ function isNum (num) {
 function createWorld () {
   const world = new CANNON.World()
   world.quatNormalizeFast = true
-  world.quatNormalizeSkip = 0
+  world.quatNormalizeSkip = 1
   world.broadphase.useBoundingBoxes = true
   world.gravity = new CANNON.Vec3(0, 0, GRAVITY)
   world.broadphase = new CANNON.NaiveBroadphase()
   const solver = new CANNON.GSSolver()
-  solver.iterations = 2
-  world.defaultContactMaterial.contactEquationRegularizationTime = 0.55
-  solver.tolerance = 0.02
+  solver.iterations = 3
+  solver.tolerance = 0.01
   world.solver = solver
 
   world.quatNormalizeFast = true
-  world.quatNormalizeSkip = 0
+  world.quatNormalizeSkip = 3
   world.broadphase.useBoundingBoxes = true
 
   world.defaultContactMaterial.friction = 0.7
