@@ -1,0 +1,17 @@
+{
+  "name": "physics-thing",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Hugh Kennedy <hughskennedy@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "gl-geometry": "^3.1.0",
+    "gl-shader": "^4.2.0",
+    "glslify": "^5.0.2",
+    "scene-tree": "^2.0.1"
+  }
+}
