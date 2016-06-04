@@ -2,6 +2,10 @@ const canvas = document.body.appendChild(document.createElement('canvas'))
 const camera = require('canvas-orbit-camera')(canvas)
 const gl = require('gl-context')(canvas, tick)
 const Fit = require('canvas-fit')
+const CANNON = require('cannon')
+
+const TIME_STEP = 1.0 / 60.0 // seconds
+const MAX_SUB_STEPS = 1
 
 const perspective = require('gl-mat4/perspective')
 const shaders = require('./shaders/index')(gl)
@@ -14,13 +18,35 @@ const lights = []
 
 const getNodeList = scene.list(require('./node-sorter'))
 
-scene.add(
-  Node({ geom: geoms.sphere, shader: shaders.sphere }),
-  Node({ geom: geoms.sphere, shader: shaders.sphere }),
-  Node({ geom: geoms.sphere, shader: shaders.sphere }),
-  Node({ geom: geoms.sphere, shader: shaders.sphere }),
-  Node({ light: [1, 0, 0] })
-)
+const world = new CANNON.World()
+world.gravity = new CANNON.Vec3(0, -9.82, 0)
+
+function createSphere (options = {}) {
+  const position = options.position || [0, 0, 0]
+  const body = new CANNON.Body({
+    mass: options.mass == undefined ? 1 : options.mass,
+    position: new CANNON.Vec3(position[0], position[1], position[2]),
+    shape: new CANNON.Sphere(options.radius || 1)
+  })
+  window.b = body
+
+  const node = {
+    geom: geoms.sphere,
+    shader: shaders.sphere,
+    scale: options.radius,
+    body: body,
+    position: position
+  }
+
+  world.addBody(node.body)
+  scene.add(Node(node))
+
+  return node
+}
+
+scene.add(Node({ light: [1, 0, 0] }))
+
+createSphere()
 
 function tick () {
   step()
@@ -39,6 +65,8 @@ function step () {
     node.setPosition(Math.random(), Math.random(), Math.random())
   })
 
+  world.step(1 / 60)
+  console.log(b.position)
   scene.tick()
 }
 

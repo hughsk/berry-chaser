@@ -15,6 +15,7 @@
   "license": "ISC",
   "dependencies": {
     "budo": "^8.3.0",
+    "cannon": "^0.6.2",
     "canvas-fit": "^1.5.0",
     "canvas-orbit-camera": "^1.0.2",
     "face-normals": "0.0.0",
