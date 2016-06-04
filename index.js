@@ -31,85 +31,190 @@ const lights = []
 
 const getNodeList = scene.list(require('./node-sorter'))
 
-const world = createWorld()
+window.addEventListener('resize', Fit(canvas), false)
 
-window.world = world
+let world = null
+let playerControls = null
 
-class Game {
-  constructor () {
-    this.player = null
-    this.jumpBlocked = false
+/**
+ * Game Init
+ */
+
+function start () {
+  world = createWorld()
+  window.world = world
+
+  playerControls = new PlayerControls()
+
+  scene.add(Node({ light: [1, 0, 0] }))
+
+  world.addBody(new CANNON.Body({
+    mass: 0,
+    shape: new CANNON.Plane()
+  }))
+
+  const playerModel = createSphere({ position: [3, 3, 1], mass: 0.3 })
+  playerControls.control(playerModel)
+
+  const t1 = createTurret({ position: [10, 10, 0] })
+  const t2 = createTurret({ position: [-10, -10, 0] })
+
+  t1.startFiring()
+  t2.startFiring()
+}
+
+/**
+ * Render Loop
+ */
+
+function tick () {
+  if (!world) start()
+  playerControls.tick()
+  step()
+  render()
+}
+
+function step () {
+  const width = canvas.width
+  const height = canvas.height
+
+  camera.tick()
+  camera.view(view)
+  perspective(proj, Math.PI / 4, width / height, 0.1, 100)
+
+  world.step(1 / 60)
+
+  const nodes = getNodeList()
+
+  for (var i = 0; i < nodes.length; i++) {
+    var node = nodes[i]
+    var body = node.data.body
+    if (!body) continue
+
+    node.setRotation(
+      body.quaternion.x,
+      body.quaternion.y,
+      body.quaternion.z,
+      body.quaternion.w
+    )
+    node.setPosition(
+      body.position.x,
+      body.position.y,
+      body.position.z
+    )
   }
 
-  control (node) {
-    this.player = node
+  scene.tick()
+}
+
+function render () {
+  const width = canvas.width
+  const height = canvas.height
+
+  gl.viewport(0, 0, width, height)
+  gl.clearColor(0, 0, 0, 1)
+  gl.clear(gl.COLOR_BUFFER_BIT)
+  gl.enable(gl.DEPTH_TEST)
+  gl.enable(gl.CULL_FACE)
+
+  const nodes = getNodeList()
+  var currShad = null
+  var currGeom = null
+
+  lights.length = 0
+
+  for (let i = 0; i < nodes.length; i++) {
+    var node = nodes[i]
+    if (node.data.light) lights.push(node.data.light)
   }
 
-  playerCollisions () {
-    if (!this.player) return []
-    const body = this.player.body
-    return world.contacts.filter(evt => {
-      return evt.bi === body
-    })
-  }
+  for (let i = 0; i < nodes.length; i++) {
+    var node = nodes[i]
+    var data = node.data
+    var geom = data.geom
+    var shad = data.shader
 
-  applyControls () {
-    if (!this.player) return
-    const lr = pressed('<right>') - pressed('<left>')
-    const ud = pressed('<up>') - pressed('<down>')
-    const jump = pressed('<space>')
-    if (jump) {
-      if (this.jumpWasPressed) {
-        this.jumpWasReleased = false
-      }
-      this.jumpWasPressed = true
-    } else {
-      if (this.jumpWasPressed) this.jumpWasReleased = true
-      this.jumpWasPressed = false
+    if (!geom) continue
+    if (!shad) continue
+
+    if (currGeom !== geom) {
+      currGeom = geom
+      geom.bind()
+    }
+    if (currShad !== shad) {
+      currShad = shad
+      shad.bind()
+      shad.uniforms.proj = proj
+      shad.uniforms.view = view
+      shad.uniforms.lights = lights
     }
 
-    const body = this.player.body
-
-    let force = CONTROL_FORCE
-    const keyPressed = lr !== 0 || ud !== 0 || jump !== 0
-    if (keyPressed) {
-      const c = this.playerCollisions()
-      if (!c.length) {
-        // we are in the air
-        force *= AIR_CONTROL
-      } else if (jump && this.jumpWasReleased && !this.jumpBlocked) {
-        // can jump
-        for (let i = 0; i < c.length; i++) {
-          const collision = c[i]
-          const contactBelow = collision.ni.dot(new CANNON.Vec3(0, 0, -1))
-          // ensure has contact below
-          if (contactBelow < 1 - JUMP_RANGE || contactBelow > 1 + JUMP_RANGE) continue
-          this.jumpBlocked = true
-          body.applyImpulse(new CANNON.Vec3(0, 0, JUMP_FORCE), body.position)
-          setTimeout(() => {
-            this.jumpBlocked = false
-          }, JUMP_TIMEOUT)
-          break
-        }
-      }
-    }
-
-    body.applyForce(new CANNON.Vec3(lr, ud, 0).mult(force), body.position)
-
-    // set max horizontal velocity
-    const verticalVelocity = body.velocity.z
-    body.velocity.scale(1, 1, 0)
-    body.velocity = body.velocity.unit().scale(Math.min(Math.abs(body.velocity.length()), MAX_VELOCITY))
-    body.velocity.z = verticalVelocity
-  }
-
-  tick () {
-    this.applyControls()
+    shad.uniforms.model = node.modelMatrix
+    shad.uniforms.normalMatrix = node.normalMatrix
+    geom.draw()
   }
 }
 
-const game = new Game()
-window.game = game
+function isNum (num) {
+  return !Number.isNaN(num) && typeof num === 'number'
+}
+
+/**
+ * Entities
+ */
+
+function createWorld () {
+  const world = new CANNON.World()
+  world.quatNormalizeFast = true
+  world.quatNormalizeSkip = 1
+  world.broadphase.useBoundingBoxes = true
+  world.gravity = new CANNON.Vec3(0, 0, GRAVITY)
+  world.broadphase = new CANNON.NaiveBroadphase()
+  const solver = new CANNON.GSSolver()
+  solver.iterations = 3
+  solver.tolerance = 0.01
+  world.solver = solver
+
+  world.quatNormalizeFast = true
+  world.quatNormalizeSkip = 3
+  world.broadphase.useBoundingBoxes = true
+
+  world.defaultContactMaterial.friction = 0.7
+  world.defaultContactMaterial.restitution = 0.0
+  world.defaultContactMaterial.contactEquationStiffness = 1e9
+  world.defaultContactMaterial.contactEquationRegularizationTime = 4
+  return world
+}
+
+function createTurret (options) {
+  let position = options.position || [0, 0, 0]
+  let dims = options.dims || [1, 1, 10]
+  const tower = createBox({ position, mass: 0, dims })
+  tower.startFiring = function () {
+    tower.firing = true
+    tower._fire = setInterval(function () {
+      if (!tower.firing) return
+      const pos = tower.body.position.clone()
+      pos.z = dims[2] + 1
+      const body = playerControls.player.body
+      let targetPos = body.position.clone()
+      targetPos = targetPos.vadd(body.velocity)
+      const direction = pos.vsub(targetPos).unit().scale(-1)
+      createProjectile({
+        mass: 10.00,
+        position: [pos.x, pos.y, pos.z],
+        direction: [direction.x, direction.y, direction.z]
+      })
+    }, 1000)
+  }
+
+  tower.stopFiring = function () {
+    tower.firing = false
+    clearInterval(tower._fire)
+  }
+
+  return tower
+}
 
 function createSphere (options = {}) {
   const position = options.position || [0, 0, 0]
@@ -201,165 +306,75 @@ function createProjectile (options = {}) {
   return node
 }
 
-scene.add(Node({ light: [1, 0, 0] }))
-
-world.addBody(new CANNON.Body({
-  mass: 0,
-  shape: new CANNON.Plane()
-}))
-
-const player = createSphere({ position: [3, 3, 1], mass: 0.3 })
-
-function createTurret (options) {
-  let position = options.position || [0, 0, 0]
-  let dims = options.dims || [1, 1, 10]
-  const tower = createBox({ position, mass: 0, dims })
-  tower.startFiring = function () {
-    tower.firing = true
-    tower._fire = setInterval(function () {
-      if (!tower.firing) return
-      const pos = tower.body.position.clone()
-      pos.z = dims[2] + 1
-      const body = player.body
-      let targetPos = body.position.clone()
-      targetPos = targetPos.vadd(body.velocity)
-      const direction = pos.vsub(targetPos).unit().scale(-1)
-      createProjectile({
-        mass: 10.00,
-        position: [pos.x, pos.y, pos.z],
-        direction: [direction.x, direction.y, direction.z]
-      })
-    }, 1000)
+class PlayerControls {
+  constructor () {
+    this.player = null
+    this.jumpBlocked = false
   }
 
-  tower.stopFiring = function () {
-    tower.firing = false
-    clearInterval(tower._fire)
+  control (node) {
+    this.player = node
   }
 
-  return tower
-}
-
-const t1 = createTurret({ position: [10, 10, 0] })
-const t2 = createTurret({ position: [-10, -10, 0] })
-
-t1.startFiring()
-t2.startFiring()
-
-game.control(player)
-
-function tick () {
-  game.tick()
-  step()
-  render()
-}
-
-function step () {
-  const width = canvas.width
-  const height = canvas.height
-
-  camera.tick()
-  camera.view(view)
-  perspective(proj, Math.PI / 4, width / height, 0.1, 100)
-
-  world.step(1 / 60)
-
-  const nodes = getNodeList()
-
-  for (var i = 0; i < nodes.length; i++) {
-    var node = nodes[i]
-    var body = node.data.body
-    if (!body) continue
-
-    node.setRotation(
-      body.quaternion.x,
-      body.quaternion.y,
-      body.quaternion.z,
-      body.quaternion.w
-    )
-    node.setPosition(
-      body.position.x,
-      body.position.y,
-      body.position.z
-    )
+  playerCollisions () {
+    if (!this.player) return []
+    const body = this.player.body
+    return world.contacts.filter(evt => {
+      return evt.bi === body
+    })
   }
 
-  scene.tick()
-}
-
-function render () {
-  const width = canvas.width
-  const height = canvas.height
-
-  gl.viewport(0, 0, width, height)
-  gl.clearColor(0, 0, 0, 1)
-  gl.clear(gl.COLOR_BUFFER_BIT)
-  gl.enable(gl.DEPTH_TEST)
-  gl.enable(gl.CULL_FACE)
-
-  const nodes = getNodeList()
-  var currShad = null
-  var currGeom = null
-
-  lights.length = 0
-
-  for (let i = 0; i < nodes.length; i++) {
-    var node = nodes[i]
-    if (node.data.light) lights.push(node.data.light)
-  }
-
-  for (let i = 0; i < nodes.length; i++) {
-    var node = nodes[i]
-    var data = node.data
-    var geom = data.geom
-    var shad = data.shader
-
-    if (!geom) continue
-    if (!shad) continue
-
-    if (currGeom !== geom) {
-      currGeom = geom
-      geom.bind()
-    }
-    if (currShad !== shad) {
-      currShad = shad
-      shad.bind()
-      shad.uniforms.proj = proj
-      shad.uniforms.view = view
-      shad.uniforms.lights = lights
+  applyControls () {
+    if (!this.player) return
+    const lr = pressed('<right>') - pressed('<left>')
+    const ud = pressed('<up>') - pressed('<down>')
+    const jump = pressed('<space>')
+    if (jump) {
+      if (this.jumpWasPressed) {
+        this.jumpWasReleased = false
+      }
+      this.jumpWasPressed = true
+    } else {
+      if (this.jumpWasPressed) this.jumpWasReleased = true
+      this.jumpWasPressed = false
     }
 
-    shad.uniforms.model = node.modelMatrix
-    shad.uniforms.normalMatrix = node.normalMatrix
-    geom.draw()
+    const body = this.player.body
+
+    let force = CONTROL_FORCE
+    const keyPressed = lr !== 0 || ud !== 0 || jump !== 0
+    if (keyPressed) {
+      const c = this.playerCollisions()
+      if (!c.length) {
+        // we are in the air
+        force *= AIR_CONTROL
+      } else if (jump && this.jumpWasReleased && !this.jumpBlocked) {
+        // can jump
+        for (let i = 0; i < c.length; i++) {
+          const collision = c[i]
+          const contactBelow = collision.ni.dot(new CANNON.Vec3(0, 0, -1))
+          // ensure has contact below
+          if (contactBelow < 1 - JUMP_RANGE || contactBelow > 1 + JUMP_RANGE) continue
+          this.jumpBlocked = true
+          body.applyImpulse(new CANNON.Vec3(0, 0, JUMP_FORCE), body.position)
+          setTimeout(() => {
+            this.jumpBlocked = false
+          }, JUMP_TIMEOUT)
+          break
+        }
+      }
+    }
+
+    body.applyForce(new CANNON.Vec3(lr, ud, 0).mult(force), body.position)
+
+    // set max horizontal velocity
+    const verticalVelocity = body.velocity.z
+    body.velocity.scale(1, 1, 0)
+    body.velocity = body.velocity.unit().scale(Math.min(Math.abs(body.velocity.length()), MAX_VELOCITY))
+    body.velocity.z = verticalVelocity
+  }
+
+  tick () {
+    this.applyControls()
   }
 }
-
-function isNum (num) {
-  return !Number.isNaN(num) && typeof num === 'number'
-}
-
-function createWorld () {
-  const world = new CANNON.World()
-  world.quatNormalizeFast = true
-  world.quatNormalizeSkip = 1
-  world.broadphase.useBoundingBoxes = true
-  world.gravity = new CANNON.Vec3(0, 0, GRAVITY)
-  world.broadphase = new CANNON.NaiveBroadphase()
-  const solver = new CANNON.GSSolver()
-  solver.iterations = 3
-  solver.tolerance = 0.01
-  world.solver = solver
-
-  world.quatNormalizeFast = true
-  world.quatNormalizeSkip = 3
-  world.broadphase.useBoundingBoxes = true
-
-  world.defaultContactMaterial.friction = 0.7
-  world.defaultContactMaterial.restitution = 0.0
-  world.defaultContactMaterial.contactEquationStiffness = 1e9
-  world.defaultContactMaterial.contactEquationRegularizationTime = 4
-  return world
-}
-
-window.addEventListener('resize', Fit(canvas), false)
