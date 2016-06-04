@@ -3,10 +3,12 @@ const unindex = require('unindex-mesh')
 const icosphere = require('icosphere')
 const Geom = require('gl-geometry')
 const shortid = require('shortid')
+const Cube = require('primitive-cube')
 
 module.exports = function (gl) {
   return {
-    sphere: createGeom(gl, icosphere(2))
+    sphere: createGeom(gl, icosphere(2)),
+    box: createGeom(gl, Cube())
   }
 }
 

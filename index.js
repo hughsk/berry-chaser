@@ -3,9 +3,17 @@ const camera = require('canvas-orbit-camera')(canvas)
 const gl = require('gl-context')(canvas, tick)
 const Fit = require('canvas-fit')
 const CANNON = require('cannon')
+const pressed = require('key-pressed')
 
 const TIME_STEP = 1.0 / 60.0 // seconds
 const MAX_SUB_STEPS = 1
+const MAX_VELOCITY = 5
+const CONTROL_FORCE = 30
+const JUMP_TIMEOUT = 500
+const JUMP_RANGE = 0.25
+const AIR_CONTROL = 0.3
+const GRAVITY = -9.82 * 3
+const JUMP_FORCE = -1 * GRAVITY * 0.6
 
 const qrx = require('gl-quat/rotateX')
 const qry = require('gl-quat/rotateY')
@@ -23,24 +31,131 @@ const lights = []
 
 const getNodeList = scene.list(require('./node-sorter'))
 
-const world = new CANNON.World()
-// world.gravity = new CANNON.Vec3(0, -9.82, 0)
-world.gravity.z = -9.82
+const world = createWorld()
+
 window.world = world
+
+class Game {
+  constructor () {
+    this.player = null
+    this.jumpBlocked = false
+  }
+
+  control (node) {
+    this.player = node
+  }
+
+  playerCollisions () {
+    if (!this.player) return []
+    const body = this.player.body
+    return world.contacts.filter(evt => {
+      return evt.bi === body
+    })
+  }
+
+  applyControls () {
+    if (!this.player) return
+    const lr = pressed('<right>') - pressed('<left>')
+    const ud = pressed('<up>') - pressed('<down>')
+    const jump = pressed('<space>')
+    if (jump) {
+      if (this.jumpWasPressed) {
+        this.jumpWasReleased = false
+      }
+      this.jumpWasPressed = true
+    } else {
+      if (this.jumpWasPressed) this.jumpWasReleased = true
+      this.jumpWasPressed = false
+    }
+
+    const body = this.player.body
+
+    let force = CONTROL_FORCE
+    const keyPressed = lr !== 0 || ud !== 0 || jump !== 0
+    if (keyPressed) {
+      const c = this.playerCollisions()
+      if (!c.length) {
+        // we are in the air
+        force *= AIR_CONTROL
+      } else if (jump && this.jumpWasReleased && !this.jumpBlocked) {
+        // can jump
+        for (let i = 0; i < c.length; i++) {
+          const collision = c[i]
+          const contactBelow = collision.ni.dot(new CANNON.Vec3(0, 0, -1))
+          // ensure has contact below
+          if (contactBelow < 1 - JUMP_RANGE || contactBelow > 1 + JUMP_RANGE) continue
+          this.jumpBlocked = true
+          body.applyImpulse(new CANNON.Vec3(0, 0, JUMP_FORCE), body.position)
+          setTimeout(() => {
+            this.jumpBlocked = false
+          }, JUMP_TIMEOUT)
+          break
+        }
+      }
+    }
+
+    body.applyForce(new CANNON.Vec3(lr, ud, 0).mult(force), body.position)
+
+    // set max horizontal velocity
+    const verticalVelocity = body.velocity.z
+    body.velocity.scale(1, 1, 0)
+    body.velocity = body.velocity.unit().scale(Math.min(Math.abs(body.velocity.length()), MAX_VELOCITY))
+    body.velocity.z = verticalVelocity
+  }
+
+  tick () {
+    this.applyControls()
+  }
+}
+
+const game = new Game()
+window.game = game
 
 function createSphere (options = {}) {
   const position = options.position || [0, 0, 0]
+  options.radius = options.radius || 0.5
+
+  position[0] = position[0] - 1 * options.radius
+  position[1] = position[1] - 1 * options.radius
+  position[2] = position[2] - 1 * options.radius
+
   const body = new CANNON.Body({
-    mass: options.mass == undefined ? 1 : options.mass,
+    mass: !isNum(options.mass) ? 1 : options.mass,
     position: new CANNON.Vec3(position[0], position[1], position[2]),
-    shape: new CANNON.Sphere(options.radius || 1)
+    shape: new CANNON.Sphere(options.radius)
   })
-  window.b = body
 
   const node = {
     geom: geoms.sphere,
     shader: shaders.sphere,
     scale: options.radius,
+    body: body,
+    position: position
+  }
+
+  world.addBody(node.body)
+  scene.add(Node(node))
+
+  return node
+}
+
+function createBox (options = {}) {
+  const position = options.position || [0, 0, 0]
+  const dims = options.dims || [1, 1, 1]
+  position[0] = position[0] - 0.5 * dims[0]
+  position[1] = position[1] - 0.5 * dims[1]
+  position[2] = position[2] - 0.5 * dims[2]
+
+  const body = new CANNON.Body({
+    mass: !isNum(options.mass) ? 1 : options.mass,
+    position: new CANNON.Vec3(position[0], position[1], position[2]),
+    shape: new CANNON.Box(new CANNON.Vec3(dims[0] * 0.5, dims[1] * 0.5, dims[2] * 0.5))
+  })
+
+  const node = {
+    geom: geoms.box,
+    shader: shaders.sphere,
+    scale: dims,
     body: body,
     position: position
   }
@@ -58,18 +173,17 @@ world.addBody(new CANNON.Body({
   shape: new CANNON.Plane()
 }))
 
-createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 11] })
-createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 12] })
-createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 13] })
-createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 10] })
-createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 14] })
-createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 15] })
-createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 16] })
-createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 17] })
-createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 18] })
-createSphere({ position: [0.01 * Math.random(), 0.01 * Math.random(), 19] })
+createBox({ position: [0, 0, 1] })
+createBox({ position: [0, 1, 1] })
+createBox({ position: [0, 2, 1] })
+createBox({ position: [1, 3, 1], dims: [3, 1, 1] })
+createBox({ position: [3, 1, 1], dims: [1, 2, 1] })
+const player = createSphere({ position: [3, 3, 1] })
+
+game.control(player)
 
 function tick () {
+  game.tick()
   step()
   render()
 }
@@ -153,6 +267,34 @@ function render () {
     shad.uniforms.normalMatrix = node.normalMatrix
     geom.draw()
   }
+}
+
+function isNum (num) {
+  return !Number.isNaN(num) && typeof num === 'number'
+}
+
+function createWorld () {
+  const world = new CANNON.World()
+  world.quatNormalizeFast = true
+  world.quatNormalizeSkip = 0
+  world.broadphase.useBoundingBoxes = true
+  world.gravity = new CANNON.Vec3(0, 0, GRAVITY)
+  world.broadphase = new CANNON.NaiveBroadphase()
+  const solver = new CANNON.GSSolver()
+  solver.iterations = 2
+  world.defaultContactMaterial.contactEquationRegularizationTime = 0.55
+  solver.tolerance = 0.02
+  world.solver = solver
+
+  world.quatNormalizeFast = true
+  world.quatNormalizeSkip = 0
+  world.broadphase.useBoundingBoxes = true
+
+  world.defaultContactMaterial.friction = 0.7
+  world.defaultContactMaterial.restitution = 0.0
+  world.defaultContactMaterial.contactEquationStiffness = 1e9
+  world.defaultContactMaterial.contactEquationRegularizationTime = 4
+  return world
 }
 
 window.addEventListener('resize', Fit(canvas), false)
