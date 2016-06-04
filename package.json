@@ -4,11 +4,19 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "budo index.js"
+  },
+  "browserify": {
+    "transform": [
+      "glslify"
+    ]
   },
   "author": "Hugh Kennedy <hughskennedy@gmail.com>",
   "license": "ISC",
   "dependencies": {
+    "budo": "^8.3.0",
+    "canvas-fit": "^1.5.0",
+    "gl-context": "^0.1.1",
     "gl-geometry": "^3.1.0",
     "gl-shader": "^4.2.0",
     "glslify": "^5.0.2",
