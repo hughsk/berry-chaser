@@ -8,7 +8,7 @@ module.exports = createTurret
 
 function createTurret (scene, options) {
   let position = options.position || [0, 0, 0]
-  let dims = options.dims || [1, 1, 9.5]
+  let dims = options.dims || [0.75, 0.75, 9.5]
   const tower = createBox(scene, { position, mass: 0, dims })
 
   tower.startFiring = function () {

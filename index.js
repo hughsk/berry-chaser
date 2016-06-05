@@ -46,6 +46,7 @@ let playerControls = null
 
 let mobs = []
 let tower = null
+const towers = []
 
 /**
  * Game Init
@@ -73,6 +74,7 @@ function start () {
   const t1 = createTurret(scene, { player: playerModel, position: [10, 10, WATER_HEIGHT] })
   const t2 = createTurret(scene, { player: playerModel, position: [-10, -10, WATER_HEIGHT] })
   tower = t1
+  towers.push(t1, t2)
   //t1.startFiring()
   //t2.startFiring()
 
@@ -254,7 +256,7 @@ function isNum (num) {
 }
 
 const MOB_SIGHT = 15
-const MAX_VELOCITY = 3
+const MAX_VELOCITY = 3.8
 const MOB_SPEED = 75
 const MOB_SPACE = 1
 
@@ -262,14 +264,23 @@ function mobTick () {
   const playerBody = playerControls.player.body
   mobs.forEach(mob => {
     const body = mob.body
-    mob.node.setScale(mob.size + Math.random() * 0.1)
+    mob.node.setScale(mob.size + Math.random() * 0.15)
     if (body.position.distanceTo(playerBody.position) < MOB_SIGHT) {
       mob.target = playerBody.position
       if (Math.random() > 0.99 && body.velocity.z < 5) {
         body.applyImpulse(new CANNON.Vec3(0, 0, 10), body.position)
       }
     } else {
-      // mob.target = tower.body.position
+      var maxDistance = Infinity
+
+      const tower = towers.reduce(function (best, tower) {
+        var d1 = body.position.distanceTo(tower.body.position)
+        var d2 = maxDistance
+        if (d1 > d2) return best
+        maxDistance = d1
+        return tower
+      }, null)
+
       mob.target = tower.orbPosition
     }
 

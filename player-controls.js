@@ -2,7 +2,7 @@ const pressed = require('key-pressed')
 const CANNON = require('cannon')
 
 const GRAVITY = -9.82 * 3
-const CONTROL_FORCE = 30
+const CONTROL_FORCE = 35
 const AIR_CONTROL = 0.3
 const MAX_VELOCITY = 5
 const JUMP_RANGE = 0.25
