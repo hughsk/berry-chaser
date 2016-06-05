@@ -1,16 +1,13 @@
 precision mediump float;
 
-#define LIGHT_COUNT 2
-uniform vec3 lightPos[LIGHT_COUNT];
-uniform vec3 lightCol[LIGHT_COUNT];
-
 varying vec3 vnorm;
+varying vec3 vpos;
 
 #pragma glslify: applyFog = require('./_fog')
+#pragma glslify: applyLight = require('./_light')
 
 void main() {
-  float mag = max(0.0, dot(normalize(vec3(0.3, -0.5, 1)), vnorm));
   float d = gl_FragCoord.z / gl_FragCoord.w;
 
-  gl_FragColor = vec4(applyFog(vec3(0.45, 0.8, 1.1) * mag, d), 1);
+  gl_FragColor = vec4(applyFog(applyLight(vec3(0.45, 0.8, 1.1), vpos, vnorm, 0.0, 0.0), d), 1);
 }
