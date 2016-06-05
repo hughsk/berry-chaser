@@ -6,8 +6,11 @@ uniform vec3 lightCol[LIGHT_COUNT];
 
 varying vec3 vnorm;
 
+#pragma glslify: applyFog = require('./_fog')
+
 void main() {
   float mag = max(0.0, dot(normalize(vec3(0.3, -0.5, 1)), vnorm));
+  float d = gl_FragCoord.z / gl_FragCoord.w;
 
-  gl_FragColor = vec4(vec3(0.45, 0.8, 1.1) * mag, 1);
+  gl_FragColor = vec4(applyFog(vec3(0.45, 0.8, 1.1) * mag, d), 1);
 }

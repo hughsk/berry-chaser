@@ -24,6 +24,8 @@
     "gl-mat4": "^1.1.4",
     "gl-quat": "^1.0.0",
     "gl-shader": "^4.2.0",
+    "glsl-easings": "^1.0.0",
+    "glsl-fog": "0.0.1",
     "glslify": "^5.0.2",
     "icosphere": "^1.0.0",
     "js.perlin": "0.0.1",
