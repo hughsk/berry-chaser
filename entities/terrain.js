@@ -6,12 +6,10 @@ const Geom = require('gl-geometry')
 const shortid = require('shortid')
 const Node = require('scene-tree')
 
-const TERRAIN_SHAPE = [96, 96]
-
 module.exports = function createTerrain (scene, options = {}) {
   const data = []
-  const w = TERRAIN_SHAPE[0]
-  const h = TERRAIN_SHAPE[1]
+  const w = options.shape[0]
+  const h = options.shape[1]
   const plane = Plane(w - 1, h - 1, w - 1, h - 1)
 
   for (var x = 0; x < w; x++) {

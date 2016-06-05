@@ -7,6 +7,7 @@ const CANNON = require('cannon')
 const TIME_STEP = 1.0 / 60.0 // seconds
 const MAX_SUB_STEPS = 1
 const GRAVITY = -9.82 * 3
+const TERRAIN_SHAPE = [96, 96]
 
 const Node = require('scene-tree')
 const scene = Node()
@@ -18,10 +19,11 @@ const qry = require('gl-quat/rotateY')
 const qrz = require('gl-quat/rotateZ')
 const perspective = require('gl-mat4/perspective')
 const PlayerControls = require('./player-controls')
-const createTerrain = require('./entities/terrain')
 const createTurret = require('./entities/turret')
 const createWater = require('./entities/water')
 const createBox = require('./entities/box')
+const createBoundary = require('./entities/boundary')
+const createTerrain = require('./entities/terrain')
 const proj = new Float32Array(16)
 const view = new Float32Array(16)
 const lights = []
@@ -47,11 +49,6 @@ function start () {
 
   scene.add(Node({ light: [1, 0, 0] }))
 
-  world.addBody(new CANNON.Body({
-    mass: 0,
-    shape: new CANNON.Plane()
-  }))
-
   const playerModel = createSphere(scene, { position: [3, 3, 1], mass: 0.3 })
   playerControls.control(playerModel)
 
@@ -61,8 +58,22 @@ function start () {
   t1.startFiring()
   t2.startFiring()
 
-  createTerrain(scene)
-  createWater(scene)
+  createTerrain(scene, {
+    shape: TERRAIN_SHAPE
+  })
+
+  createBoundary(scene, {
+    shape: [
+      TERRAIN_SHAPE[0] - 1,
+      TERRAIN_SHAPE[1] - 1
+    ]
+  })
+
+  const body = new CANNON.Body({
+    mass: 0,
+    shape: new CANNON.Plane()
+  })
+  world.addBody(body)
 }
 
 /**
