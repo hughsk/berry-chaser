@@ -5,7 +5,7 @@ const shortid = require('shortid')
 module.exports = function (gl) {
   var prefix = ``
 
-  console.log(glslify('./sphere.frag'))
+  console.log(glslify('./plain.frag'))
   return {
     sphere: createShader(gl
       , prefix + glslify('./sphere.vert')

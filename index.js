@@ -3,6 +3,7 @@ const camera = require('canvas-orbit-camera')(canvas)
 const gl = require('gl-context')(canvas, tick)
 const Fit = require('canvas-fit')
 const CANNON = require('cannon')
+const eye = require('eye-vector')
 
 const TIME_STEP = 1.0 / 60.0 // seconds
 const MAX_SUB_STEPS = 1
@@ -24,6 +25,7 @@ const createWater = require('./entities/water')
 const createBox = require('./entities/box')
 const proj = new Float32Array(16)
 const view = new Float32Array(16)
+const eyev = new Float32Array(3)
 const lightCols = []
 const lightPoss = []
 
@@ -89,6 +91,8 @@ function step () {
   camera.center[2] = playerControls.player.body.position.z
   camera.tick()
   camera.view(view)
+  eye(view, eyev)
+
   perspective(proj, Math.PI / 4, width / height, 0.1, 300)
 
   world.step(1 / 60)
@@ -162,6 +166,7 @@ function render () {
       shad.bind()
       shad.uniforms.proj = proj
       shad.uniforms.view = view
+      shad.uniforms.viewPos = eyev
       shad.uniforms.lightCol = lightCols
       shad.uniforms.lightPos = lightPoss
     }
