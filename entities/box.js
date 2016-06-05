@@ -19,7 +19,7 @@ function createBox (scene, options = {}) {
 
   const node = {
     geom: scene.geoms.box,
-    shader: scene.shaders.sphere,
+    shader: scene.shaders.plain,
     scale: dims,
     body: body,
     position: position

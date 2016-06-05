@@ -11,6 +11,14 @@ module.exports = function (gl) {
     projectile: createShader(gl
       , glslify('./sphere.vert')
       , glslify('./projectile.frag')
+    ),
+    water: createShader(gl
+      , glslify('./sphere.vert')
+      , glslify('./water.frag')
+    ),
+    plain: createShader(gl
+      , glslify('./sphere.vert')
+      , glslify('./plain.frag')
     )
   }
 }

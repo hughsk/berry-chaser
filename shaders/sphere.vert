@@ -11,6 +11,6 @@ uniform mat3 normalMatrix;
 varying vec3 vnorm;
 
 void main() {
-  vnorm = normalMatrix * normal;
+  vnorm = normalize(normalMatrix * normal);
   gl_Position = proj * view * model * vec4(position, 1);
 }

@@ -9,5 +9,5 @@ varying vec3 vnorm;
 void main() {
   float mag = max(0.0, dot(normalize(vec3(0.3, -0.5, 1)), vnorm));
 
-  gl_FragColor = vec4(mag, mag, mag, 1);
+  gl_FragColor = vec4(vec3(0.4, 1.1, 0.8) * mag, 1);
 }

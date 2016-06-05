@@ -19,8 +19,8 @@ module.exports = function createTerrain (scene, options = {}) {
     for (var y = 0; y < h; y++) {
       var height = 0
 
-      height += simplex.noise2D(x * 0.03, y * 0.03) * 3.2
-      height += simplex.noise2D(x * 0.1, y * 0.1)
+      height += simplex.noise2D(x * 0.03, y * 0.03) * 5.2
+      height += simplex.noise2D(x * 0.1, y * 0.1) * 1.75
       height += simplex.noise2D(x * 3.1, y * 3.1) * 0.2
 
       row.push(height)
@@ -41,14 +41,13 @@ module.exports = function createTerrain (scene, options = {}) {
     var c = plane.cells[i]
     var u = c[0]
     var v = c[1]
-    // var t = c[2]
     c[0] = v
     c[1] = u
   }
 
   scene.add(Node({
     geom: createGeom(scene.gl, plane),
-    shader: scene.shaders.sphere
+    shader: scene.shaders.plain
   }))
 }
 

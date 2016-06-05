@@ -18,9 +18,10 @@ const qry = require('gl-quat/rotateY')
 const qrz = require('gl-quat/rotateZ')
 const perspective = require('gl-mat4/perspective')
 const PlayerControls = require('./player-controls')
-const createTurret = require('./entities/turret')
-const createBox = require('./entities/box')
 const createTerrain = require('./entities/terrain')
+const createTurret = require('./entities/turret')
+const createWater = require('./entities/water')
+const createBox = require('./entities/box')
 const proj = new Float32Array(16)
 const view = new Float32Array(16)
 const lights = []
@@ -61,6 +62,7 @@ function start () {
   t2.startFiring()
 
   createTerrain(scene)
+  createWater(scene)
 }
 
 /**
@@ -78,9 +80,12 @@ function step () {
   const height = canvas.height
 
   playerControls.tick()
+  camera.center[0] = playerControls.player.body.position.x
+  camera.center[1] = playerControls.player.body.position.y
+  camera.center[2] = playerControls.player.body.position.z
   camera.tick()
   camera.view(view)
-  perspective(proj, Math.PI / 4, width / height, 0.1, 100)
+  perspective(proj, Math.PI / 4, width / height, 0.1, 300)
 
   world.step(1 / 60)
 

@@ -33,6 +33,10 @@ function createTurret (scene, options) {
     clearInterval(tower._fire)
   }
 
+  setTimeout(function () {
+    tower.stopFiring()
+  }, 5000)
+
   return tower
 }
 
