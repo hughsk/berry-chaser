@@ -12,6 +12,8 @@ function createBox (scene, options = {}) {
   position[2] = position[2] - 0.5 * dims[2] * -1
 
   const body = new CANNON.Body({
+    angularDamping: 0.5,
+    linearDamping: 0.8,
     mass: !isNum(options.mass) ? 1 : options.mass,
     position: new CANNON.Vec3(position[0], position[1], position[2]),
     shape: new CANNON.Box(new CANNON.Vec3(dims[0] * 0.5, dims[1] * 0.5, dims[2] * 0.5))

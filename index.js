@@ -43,6 +43,7 @@ let world = null
 let playerControls = null
 
 let mobs = []
+let tower = null
 
 /**
  * Game Init
@@ -69,7 +70,7 @@ function start () {
 
   const t1 = createTurret(scene, { player: playerModel, position: [10, 10, 10] })
   const t2 = createTurret(scene, { player: playerModel, position: [-10, -10, 10] })
-
+  tower = t1
   //t1.startFiring()
   //t2.startFiring()
 
@@ -86,19 +87,14 @@ function start () {
     shape: TERRAIN_SHAPE
   })
 
-  mobs.push(createSphere(scene, {
-    radius: 1,
-    position: [0, 10, 20],
-    mass: 0.3,
-    shader: shaders.badguy
-  }))
-
-  mobs.push(createSphere(scene, {
-    radius: 1,
-    position: [0, 15, 20],
-    mass: 0.3,
-    shader: shaders.badguy
-  }))
+  for (var i = 0; i < 20; i++) {
+    mobs.push(createSphere(scene, {
+      radius: 0.2,
+      position: [10 + i % 5, 10 + i - i % 5, 15],
+      mass: 0.5,
+      shader: shaders.badguy
+    }))
+  }
 
   const body = new CANNON.Body({
     mass: 0,
@@ -132,7 +128,8 @@ function step () {
 
   perspective(proj, Math.PI / 4, width / height, 0.1, 300)
 
-  world.step(1 / 60)
+  world.step(1 / 120)
+  world.step(1 / 120)
 
   const nodes = getNodeList()
 
@@ -224,24 +221,27 @@ function render () {
 
 function createWorld () {
   const world = new CANNON.World()
-  world.quatNormalizeFast = true
-  world.quatNormalizeSkip = 1
-  world.broadphase.useBoundingBoxes = true
   world.gravity = new CANNON.Vec3(0, 0, GRAVITY)
   world.broadphase = new CANNON.NaiveBroadphase()
+
   const solver = new CANNON.GSSolver()
   solver.iterations = 3
-  solver.tolerance = 0.01
-  world.solver = solver
+  solver.tolerance = 0.0001
 
+  world.solver = solver
   world.quatNormalizeFast = true
-  world.quatNormalizeSkip = 3
+  world.quatNormalizeSkip = 4
   world.broadphase.useBoundingBoxes = true
 
-  world.defaultContactMaterial.friction = 0.7
+  world.defaultContactMaterial.friction = 0.9
   world.defaultContactMaterial.restitution = 0.0
-  world.defaultContactMaterial.contactEquationStiffness = 1e9
-  world.defaultContactMaterial.contactEquationRegularizationTime = 4
+
+  const k = 1e9
+  const d = 3
+  world.defaultContactMaterial.contactEquationStiffness = k
+  world.defaultContactMaterial.frictionEquationStiffness = k
+  world.defaultContactMaterial.contactEquationRelaxation = d
+  world.defaultContactMaterial.frictionEquationRelaxation = d
   return world
 }
 
@@ -258,6 +258,8 @@ function createSphere (scene, options = {}) {
   position[2] = position[2] - 1 * options.radius
 
   const body = new CANNON.Body({
+    angularDamping: 0.5,
+    linearDamping: 0.8,
     mass: !isNum(options.mass) ? 1 : options.mass,
     position: new CANNON.Vec3(position[0], position[1], position[2]),
     shape: new CANNON.Sphere(options.radius)
@@ -281,14 +283,21 @@ function createSphere (scene, options = {}) {
 const MOB_SIGHT = 10
 const MAX_VELOCITY = 3
 const MOB_SPEED = 10
+const MOB_SPACE = 1
 
 function mobTick () {
   const playerBody = playerControls.player.body
   mobs.forEach(mob => {
     const body = mob.body
-    mob.node.setScale(1 + Math.random() * 0.2)
+    mob.node.setScale(0.175 + Math.random() * 0.1)
     if (body.position.distanceTo(playerBody.position) < MOB_SIGHT) {
-      const direction = playerBody.position.clone().vsub(body.position).unit()
+      mob.target = playerBody.position
+    } else {
+      mob.target = tower.body.position
+    }
+
+    if (mob.target) {
+      const direction = mob.target.clone().vsub(body.position).unit()
       body.applyForce(direction.scale(MOB_SPEED), body.position)
     }
 
