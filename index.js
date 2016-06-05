@@ -130,7 +130,8 @@ function step () {
 
   perspective(proj, Math.PI / 4, width / height, 0.1, 300)
 
-  world.step(1 / 60)
+  world.step(1 / 120)
+  world.step(1 / 120)
 
   const nodes = getNodeList()
 
@@ -222,24 +223,27 @@ function render () {
 
 function createWorld () {
   const world = new CANNON.World()
-  world.quatNormalizeFast = true
-  world.quatNormalizeSkip = 1
-  world.broadphase.useBoundingBoxes = true
   world.gravity = new CANNON.Vec3(0, 0, GRAVITY)
   world.broadphase = new CANNON.NaiveBroadphase()
+
   const solver = new CANNON.GSSolver()
   solver.iterations = 3
-  solver.tolerance = 0.01
-  world.solver = solver
+  solver.tolerance = 0.0001
 
+  world.solver = solver
   world.quatNormalizeFast = true
-  world.quatNormalizeSkip = 3
+  world.quatNormalizeSkip = 4
   world.broadphase.useBoundingBoxes = true
 
-  world.defaultContactMaterial.friction = 0.7
+  world.defaultContactMaterial.friction = 0.9
   world.defaultContactMaterial.restitution = 0.0
-  world.defaultContactMaterial.contactEquationStiffness = 1e9
-  world.defaultContactMaterial.contactEquationRegularizationTime = 4
+
+  const k = 1e9
+  const d = 3
+  world.defaultContactMaterial.contactEquationStiffness = k
+  world.defaultContactMaterial.frictionEquationStiffness = k
+  world.defaultContactMaterial.contactEquationRelaxation = d
+  world.defaultContactMaterial.frictionEquationRelaxation = d
   return world
 }
 
@@ -256,6 +260,8 @@ function createSphere (scene, options = {}) {
   position[2] = position[2] - 1 * options.radius
 
   const body = new CANNON.Body({
+    angularDamping: 0.5,
+    linearDamping: 0.8,
     mass: !isNum(options.mass) ? 1 : options.mass,
     position: new CANNON.Vec3(position[0], position[1], position[2]),
     shape: new CANNON.Sphere(options.radius)
