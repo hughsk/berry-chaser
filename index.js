@@ -24,7 +24,8 @@ const createWater = require('./entities/water')
 const createBox = require('./entities/box')
 const proj = new Float32Array(16)
 const view = new Float32Array(16)
-const lights = []
+const lightCols = []
+const lightPoss = []
 
 scene.gl = gl
 
@@ -45,14 +46,17 @@ function start () {
 
   playerControls = new PlayerControls(world)
 
-  scene.add(Node({ light: [1, 0, 0] }))
-
   world.addBody(new CANNON.Body({
     mass: 0,
     shape: new CANNON.Plane()
   }))
 
-  const playerModel = createSphere(scene, { position: [3, 3, 1], mass: 0.3 })
+  const playerModel = createSphere(scene, {
+    position: [3, 3, 1],
+    mass: 0.3,
+    light: [0.4, 1.1, 0.8]
+  })
+
   playerControls.control(playerModel)
 
   const t1 = createTurret(scene, { player: playerModel, position: [10, 10, 0] })
@@ -126,12 +130,19 @@ function render () {
   var currShad = null
   var currGeom = null
 
-  lights.length = 0
+  lightCols.length = 0
+  lightPoss.length = 0
 
   for (let i = 0; i < nodes.length; i++) {
     var node = nodes[i]
-    if (node.data.light) lights.push(node.data.light)
+    if (node.data.light) {
+      lightCols.push(node.data.light)
+      lightPoss.push(node.data.position)
+    }
   }
+
+  while (lightCols.length < 2) lightCols.push([0, 0, 0])
+  while (lightPoss.length < 2) lightPoss.push([0, 0, 0])
 
   for (let i = 0; i < nodes.length; i++) {
     var node = nodes[i]
@@ -151,7 +162,8 @@ function render () {
       shad.bind()
       shad.uniforms.proj = proj
       shad.uniforms.view = view
-      shad.uniforms.lights = lights
+      shad.uniforms.lightCol = lightCols
+      shad.uniforms.lightPos = lightPoss
     }
 
     shad.uniforms.model = node.modelMatrix
@@ -210,7 +222,8 @@ function createSphere (scene, options = {}) {
     shader: shaders.sphere,
     scale: options.radius,
     body: body,
-    position: position
+    position: position,
+    light: options.light
   }
 
   world.addBody(node.body)

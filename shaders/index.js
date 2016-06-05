@@ -3,22 +3,25 @@ const glslify = require('glslify')
 const shortid = require('shortid')
 
 module.exports = function (gl) {
+  var prefix = ``
+
+  console.log(glslify('./sphere.frag'))
   return {
     sphere: createShader(gl
-      , glslify('./sphere.vert')
-      , glslify('./sphere.frag')
+      , prefix + glslify('./sphere.vert')
+      , prefix + glslify('./sphere.frag')
     ),
     projectile: createShader(gl
-      , glslify('./sphere.vert')
-      , glslify('./projectile.frag')
+      , prefix + glslify('./sphere.vert')
+      , prefix + glslify('./projectile.frag')
     ),
     water: createShader(gl
-      , glslify('./sphere.vert')
-      , glslify('./water.frag')
+      , prefix + glslify('./sphere.vert')
+      , prefix + glslify('./water.frag')
     ),
     plain: createShader(gl
-      , glslify('./sphere.vert')
-      , glslify('./plain.frag')
+      , prefix + glslify('./sphere.vert')
+      , prefix + glslify('./plain.frag')
     )
   }
 }

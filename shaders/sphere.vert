@@ -9,8 +9,10 @@ uniform mat4 model;
 uniform mat3 normalMatrix;
 
 varying vec3 vnorm;
+varying vec3 vpos;
 
 void main() {
   vnorm = normalize(normalMatrix * normal);
+  vpos = (model * vec4(position, 1)).xyz;
   gl_Position = proj * view * model * vec4(position, 1);
 }
