@@ -1,4 +1,4 @@
-#define LIGHT_COUNT 2
+#define LIGHT_COUNT 4
 
 uniform vec3 lightCol[LIGHT_COUNT];
 uniform vec3 lightPos[LIGHT_COUNT];

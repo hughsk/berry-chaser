@@ -1,4 +1,5 @@
 const createProjectile = require('./projectile')
+const createSphere = require('./sphere')
 const createBox = require('./box')
 const CANNON = require('cannon')
 const Node = require('scene-tree')
@@ -7,7 +8,7 @@ module.exports = createTurret
 
 function createTurret (scene, options) {
   let position = options.position || [0, 0, 0]
-  let dims = options.dims || [1, 1, 10]
+  let dims = options.dims || [1, 1, 9.5]
   const tower = createBox(scene, { position, mass: 0, dims })
 
   tower.startFiring = function () {
@@ -28,6 +29,17 @@ function createTurret (scene, options) {
     }, 1000)
   }
 
+  var sr = 2.5
+
+  createSphere(scene, {
+    mass: 0,
+    position: [position[0] + sr, position[1] + sr, position[2] + 8],
+    radius: sr,
+    shader: scene.shaders.badguy,
+    light: [3, 1, 2]
+  })
+
+  tower.orbPosition = new CANNON.Vec3(position[0], position[1], position[2] + 7 - sr)
   tower.stopFiring = function () {
     tower.firing = false
     clearInterval(tower._fire)

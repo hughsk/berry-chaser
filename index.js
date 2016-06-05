@@ -9,6 +9,7 @@ const TIME_STEP = 1.0 / 60.0 // seconds
 const MAX_SUB_STEPS = 1
 const GRAVITY = -9.82 * 3
 const TERRAIN_SHAPE = [128, 128]
+const LIGHT_COUNT = 4 // also needs to be set in shaders/_light.glsl
 const TERRAIN_SHAPE_MINUS_ONE = [TERRAIN_SHAPE[0] - 1, TERRAIN_SHAPE[1] - 1]
 
 const Node = require('scene-tree')
@@ -26,6 +27,7 @@ const createWater = require('./entities/water')
 const createBox = require('./entities/box')
 const createBoundary = require('./entities/boundary')
 const createTerrain = require('./entities/terrain')
+const createSphere = require('./entities/sphere')
 const proj = new Float32Array(16)
 const view = new Float32Array(16)
 const eyev = new Float32Array(3)
@@ -68,8 +70,8 @@ function start () {
 
   playerControls.control(playerModel)
 
-  const t1 = createTurret(scene, { player: playerModel, position: [10, 10, 10] })
-  const t2 = createTurret(scene, { player: playerModel, position: [-10, -10, 10] })
+  const t1 = createTurret(scene, { player: playerModel, position: [10, 10, WATER_HEIGHT] })
+  const t2 = createTurret(scene, { player: playerModel, position: [-10, -10, WATER_HEIGHT] })
   tower = t1
   //t1.startFiring()
   //t2.startFiring()
@@ -88,8 +90,10 @@ function start () {
   })
 
   for (var i = 0; i < 20; i++) {
+    var size = 0.2 + Math.random()
     mobs.push(createSphere(scene, {
-      radius: 0.2,
+      radius: size,
+      size: size,
       position: [10 + i % 5, 10 + i - i % 5, 15],
       mass: 0.5,
       shader: shaders.badguy
@@ -183,8 +187,8 @@ function render () {
     }
   }
 
-  while (lightCols.length < 2) lightCols.push([0, 0, 0])
-  while (lightPoss.length < 2) lightPoss.push([0, 0, 0])
+  while (lightCols.length < LIGHT_COUNT) lightCols.push([0, 0, 0])
+  while (lightPoss.length < LIGHT_COUNT) lightPoss.push([0, 0, 0])
 
   for (let i = 0; i < nodes.length; i++) {
     var node = nodes[i]
@@ -249,56 +253,32 @@ function isNum (num) {
   return !Number.isNaN(num) && typeof num === 'number'
 }
 
-function createSphere (scene, options = {}) {
-  const position = options.position || [0, 0, 0]
-  options.radius = options.radius || 0.5
-
-  position[0] = position[0] - 1 * options.radius
-  position[1] = position[1] - 1 * options.radius
-  position[2] = position[2] - 1 * options.radius
-
-  const body = new CANNON.Body({
-    angularDamping: 0.5,
-    linearDamping: 0.8,
-    mass: !isNum(options.mass) ? 1 : options.mass,
-    position: new CANNON.Vec3(position[0], position[1], position[2]),
-    shape: new CANNON.Sphere(options.radius)
-  })
-
-  const node = {
-    geom: geoms.sphere,
-    shader: options.shader || shaders.sphere,
-    scale: options.scale || options.radius,
-    body: body,
-    position: position,
-    light: options.light
-  }
-
-  world.addBody(node.body)
-  scene.add(node.node = Node(node))
-
-  return node
-}
-
-const MOB_SIGHT = 10
+const MOB_SIGHT = 15
 const MAX_VELOCITY = 3
-const MOB_SPEED = 10
+const MOB_SPEED = 75
 const MOB_SPACE = 1
 
 function mobTick () {
   const playerBody = playerControls.player.body
   mobs.forEach(mob => {
     const body = mob.body
-    mob.node.setScale(0.175 + Math.random() * 0.1)
+    mob.node.setScale(mob.size + Math.random() * 0.1)
     if (body.position.distanceTo(playerBody.position) < MOB_SIGHT) {
       mob.target = playerBody.position
+      if (Math.random() > 0.99 && body.velocity.z < 5) {
+        body.applyImpulse(new CANNON.Vec3(0, 0, 10), body.position)
+      }
     } else {
-      mob.target = tower.body.position
+      // mob.target = tower.body.position
+      mob.target = tower.orbPosition
     }
 
+
     if (mob.target) {
-      const direction = mob.target.clone().vsub(body.position).unit()
-      body.applyForce(direction.scale(MOB_SPEED), body.position)
+      var direction = mob.target.clone().vsub(body.position).unit()
+      direction = direction.scale(MOB_SPEED)
+      direction.z += 30
+      body.applyForce(direction, body.position)
     }
 
     const verticalVelocity = body.velocity.z
