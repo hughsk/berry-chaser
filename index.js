@@ -43,6 +43,7 @@ let world = null
 let playerControls = null
 
 let mobs = []
+let tower = null
 
 /**
  * Game Init
@@ -69,7 +70,7 @@ function start () {
 
   const t1 = createTurret(scene, { player: playerModel, position: [10, 10, 10] })
   const t2 = createTurret(scene, { player: playerModel, position: [-10, -10, 10] })
-
+  tower = t1
   //t1.startFiring()
   //t2.startFiring()
 
@@ -86,17 +87,13 @@ function start () {
     shape: TERRAIN_SHAPE
   })
 
-  mobs.push(createSphere(scene, {
-    radius: 1,
-    position: [0, 10, 20],
-    mass: 0.3
-  }))
-
-  mobs.push(createSphere(scene, {
-    radius: 1,
-    position: [0, 15, 20],
-    mass: 0.3
-  }))
+  for (var i = 0; i < 20; i++) {
+    mobs.push(createSphere(scene, {
+      radius: 0.2,
+      position: [10 + i % 5, 10 + i - i % 5, 15],
+      mass: 0.5
+    }))
+  }
 
   const body = new CANNON.Body({
     mass: 0,
@@ -285,13 +282,20 @@ function createSphere (scene, options = {}) {
 const MOB_SIGHT = 10
 const MAX_VELOCITY = 3
 const MOB_SPEED = 10
+const MOB_SPACE = 1
 
 function mobTick () {
   const playerBody = playerControls.player.body
   mobs.forEach(mob => {
     const body = mob.body
     if (body.position.distanceTo(playerBody.position) < MOB_SIGHT) {
-      const direction = playerBody.position.clone().vsub(body.position).unit()
+      mob.target = playerBody.position
+    } else {
+      mob.target = tower.body.position
+    }
+
+    if (mob.target) {
+      const direction = mob.target.clone().vsub(body.position).unit()
       body.applyForce(direction.scale(MOB_SPEED), body.position)
     }
 
