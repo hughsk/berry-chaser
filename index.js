@@ -42,6 +42,8 @@ window.addEventListener('resize', Fit(canvas), false)
 let world = null
 let playerControls = null
 
+let mobs = []
+
 /**
  * Game Init
  */
@@ -84,6 +86,18 @@ function start () {
     shape: TERRAIN_SHAPE
   })
 
+  mobs.push(createSphere(scene, {
+    radius: 1,
+    position: [0, 10, 20],
+    mass: 0.3
+  }))
+
+  mobs.push(createSphere(scene, {
+    radius: 1,
+    position: [0, 15, 20],
+    mass: 0.3
+  }))
+
   const body = new CANNON.Body({
     mass: 0,
     shape: new CANNON.Plane()
@@ -106,6 +120,7 @@ function step () {
   const height = canvas.height
 
   playerControls.tick()
+  mobTick()
   camera.center[0] = playerControls.player.body.position.x
   camera.center[1] = playerControls.player.body.position.y
   camera.center[2] = playerControls.player.body.position.z
@@ -259,4 +274,24 @@ function createSphere (scene, options = {}) {
   scene.add(Node(node))
 
   return node
+}
+
+const MOB_SIGHT = 10
+const MAX_VELOCITY = 3
+const MOB_SPEED = 10
+
+function mobTick () {
+  const playerBody = playerControls.player.body
+  mobs.forEach(mob => {
+    const body = mob.body
+    if (body.position.distanceTo(playerBody.position) < MOB_SIGHT) {
+      const direction = playerBody.position.clone().vsub(body.position).unit()
+      body.applyForce(direction.scale(MOB_SPEED), body.position)
+    }
+
+    const verticalVelocity = body.velocity.z
+    body.velocity.scale(1, 1, 0)
+    body.velocity = body.velocity.unit().scale(Math.min(Math.abs(body.velocity.length()), MAX_VELOCITY))
+    body.velocity.z = verticalVelocity
+  })
 }
