@@ -18,15 +18,20 @@ module.exports = function createTerrain (scene, options = {}) {
     for (var y = 0; y < h; y++) {
       var height = 0
 
-      //height += (1 + simplex.noise2D(x * 0.03, y * 0.03)) * 5.2
-      //height += (1 + simplex.noise2D(x * 0.1, y * 0.1)) * 1.75
-      //height += (1 + simplex.noise2D(x * 3.1, y * 3.1)) * 0.2
+      height += (1 + simplex.noise2D(x * 0.03, y * 0.03)) * 5.2
+      height += (simplex.noise2D(x * 0.1, y * 0.1)) * 1.75
+      height += (simplex.noise2D(x * 3.1, y * 3.1)) * 0.2
 
       // height += 2 + Math.sin(x) // works
-      height += 2 + Math.sin(y) // not works
+      // height += 2 + Math.sin(y) * Math.sin(x)// not works
       row.push(height)
     }
     data.push(row)
+  }
+
+  for (var i = 0; i < plane.positions.length; i++) {
+    // console.log(plane.positions[i][1])
+    plane.positions[i][1] *= -1
   }
 
   for (var i = 0; i < plane.uvs.length; i++) {
@@ -36,11 +41,11 @@ module.exports = function createTerrain (scene, options = {}) {
     var y = Math.min(h - 1, Math.floor(u[1] * h))
 
     p[0] += (w - 1) / 2
-    p[1] += 2.5 + (h - 1) / 2
+    p[1] += (h - 1) / 2
     p[2] = data[x][y]
   }
 
-  for (var i = 1; i < plane.cells.length; i += 2) {
+  for (var i = 0; i < plane.cells.length; i += 2) {
     var c = plane.cells[i]
     var u = c[0]
     var v = c[1]
