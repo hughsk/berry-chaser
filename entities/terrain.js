@@ -5,6 +5,7 @@ const unindex = require('unindex-mesh')
 const Geom = require('gl-geometry')
 const shortid = require('shortid')
 const Node = require('scene-tree')
+const CANNON = require('cannon')
 
 module.exports = function createTerrain (scene, options = {}) {
   const data = []
@@ -43,9 +44,19 @@ module.exports = function createTerrain (scene, options = {}) {
     c[1] = u
   }
 
+  // Create the heightfield
+  const hfShape = new CANNON.Heightfield(data, {
+    elementSize: 1
+  })
+  const hfBody = new CANNON.Body({ mass: 0 })
+  hfBody.addShape(hfShape)
+  hfBody.position.set(w * -0.5, h * -0.5, 0)
+  world.addBody(hfBody)
+
   scene.add(Node({
     geom: createGeom(scene.gl, plane),
-    shader: scene.shaders.plain
+    shader: scene.shaders.plain,
+    body: hfBody
   }))
 }
 
