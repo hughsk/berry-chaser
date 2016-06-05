@@ -19,6 +19,10 @@ module.exports = function (gl) {
       , prefix + glslify('./sphere.vert')
       , prefix + glslify('./terrain.frag')
     ),
+    badguy: createShader(gl
+      , prefix + glslify('./sphere.vert')
+      , prefix + glslify('./badguy.frag')
+    ),
     water: createShader(gl
       , prefix + glslify('./sphere.vert')
       , prefix + glslify('./water.frag')

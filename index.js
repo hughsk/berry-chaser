@@ -8,7 +8,7 @@ const eye = require('eye-vector')
 const TIME_STEP = 1.0 / 60.0 // seconds
 const MAX_SUB_STEPS = 1
 const GRAVITY = -9.82 * 3
-const TERRAIN_SHAPE = [96, 96]
+const TERRAIN_SHAPE = [128, 128]
 const TERRAIN_SHAPE_MINUS_ONE = [TERRAIN_SHAPE[0] - 1, TERRAIN_SHAPE[1] - 1]
 
 const Node = require('scene-tree')
@@ -89,13 +89,15 @@ function start () {
   mobs.push(createSphere(scene, {
     radius: 1,
     position: [0, 10, 20],
-    mass: 0.3
+    mass: 0.3,
+    shader: shaders.badguy
   }))
 
   mobs.push(createSphere(scene, {
     radius: 1,
     position: [0, 15, 20],
-    mass: 0.3
+    mass: 0.3,
+    shader: shaders.badguy
   }))
 
   const body = new CANNON.Body({
@@ -263,15 +265,15 @@ function createSphere (scene, options = {}) {
 
   const node = {
     geom: geoms.sphere,
-    shader: shaders.sphere,
-    scale: options.radius,
+    shader: options.shader || shaders.sphere,
+    scale: options.scale || options.radius,
     body: body,
     position: position,
     light: options.light
   }
 
   world.addBody(node.body)
-  scene.add(Node(node))
+  scene.add(node.node = Node(node))
 
   return node
 }
@@ -284,6 +286,7 @@ function mobTick () {
   const playerBody = playerControls.player.body
   mobs.forEach(mob => {
     const body = mob.body
+    mob.node.setScale(1 + Math.random() * 0.2)
     if (body.position.distanceTo(playerBody.position) < MOB_SIGHT) {
       const direction = playerBody.position.clone().vsub(body.position).unit()
       body.applyForce(direction.scale(MOB_SPEED), body.position)
