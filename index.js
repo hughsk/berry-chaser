@@ -8,6 +8,11 @@ const TIME_STEP = 1.0 / 60.0 // seconds
 const MAX_SUB_STEPS = 1
 const GRAVITY = -9.82 * 3
 
+const Node = require('scene-tree')
+const scene = Node()
+const shaders = scene.shaders = require('./shaders/index')(gl)
+const geoms = scene.geoms = require('./geoms/index')(gl)
+
 const qrx = require('gl-quat/rotateX')
 const qry = require('gl-quat/rotateY')
 const qrz = require('gl-quat/rotateZ')
@@ -15,13 +20,12 @@ const perspective = require('gl-mat4/perspective')
 const PlayerControls = require('./player-controls')
 const createTurret = require('./entities/turret')
 const createBox = require('./entities/box')
-const Node = require('scene-tree')
-const scene = Node()
-const shaders = scene.shaders = require('./shaders/index')(gl)
-const geoms = scene.geoms = require('./geoms/index')(gl)
+const createTerrain = require('./entities/terrain')
 const proj = new Float32Array(16)
 const view = new Float32Array(16)
 const lights = []
+
+scene.gl = gl
 
 const getNodeList = scene.list(require('./node-sorter'))
 
@@ -55,6 +59,8 @@ function start () {
 
   t1.startFiring()
   t2.startFiring()
+
+  createTerrain(scene)
 }
 
 /**
