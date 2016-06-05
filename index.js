@@ -31,6 +31,7 @@ const view = new Float32Array(16)
 const eyev = new Float32Array(3)
 const lightCols = []
 const lightPoss = []
+const WATER_HEIGHT = 3.5
 
 scene.gl = gl
 
@@ -59,7 +60,7 @@ function start () {
   const playerModel = createSphere(scene, {
     position: [0, 0, 20],
     mass: 0.3,
-    light: [0.4, 1.1, 0.8]
+    light: [1.2, 0.8, 0.4]
   })
 
   playerControls.control(playerModel)
@@ -75,7 +76,8 @@ function start () {
   })
 
   createWater(scene, {
-    scale: TERRAIN_SHAPE_MINUS_ONE[0]
+    scale: TERRAIN_SHAPE_MINUS_ONE[0],
+    position: [0, 0, WATER_HEIGHT]
   })
 
   createBoundary(scene, {
@@ -121,6 +123,10 @@ function step () {
     var node = nodes[i]
     var body = node.data.body
     if (!body) continue
+
+    if (body.mass && body.position.z < WATER_HEIGHT + 0.1) {
+      body.applyForce(new CANNON.Vec3(0, 0, -GRAVITY), body.position)
+    }
 
     node.setRotation(
       body.quaternion.x,

@@ -22,8 +22,6 @@ module.exports = function createTerrain (scene, options = {}) {
       height += (simplex.noise2D(x * 0.1, y * 0.1)) * 1.75
       height += (simplex.noise2D(x * 3.1, y * 3.1)) * 0.2
 
-      // height += 2 + Math.sin(x) // works
-      // height += 2 + Math.sin(y) * Math.sin(x)// not works
       row.push(height)
     }
     data.push(row)
@@ -63,7 +61,7 @@ module.exports = function createTerrain (scene, options = {}) {
   world.addBody(hfBody)
   const n = Node({
     geom: createGeom(scene.gl, plane),
-    shader: scene.shaders.plain,
+    shader: scene.shaders.terrain,
     body: hfBody
   })
   scene.add(n)

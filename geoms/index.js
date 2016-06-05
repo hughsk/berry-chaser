@@ -8,7 +8,7 @@ const Plane = require('primitive-plane')
 
 module.exports = function (gl) {
   return {
-    sphere: createGeom(gl, icosphere(0)),
+    sphere: createGeom(gl, icosphere(1)),
     box: createGeom(gl, Cube()),
     plane: createGeom(gl, ProperPlane())
   }

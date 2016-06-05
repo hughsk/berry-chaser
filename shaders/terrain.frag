@@ -9,5 +9,5 @@ varying vec3 vpos;
 void main() {
   float d = gl_FragCoord.z / gl_FragCoord.w;
 
-  gl_FragColor = vec4(applyFog(applyLight(vec3(0.45, 1, 1.5), vpos, vnorm, 0.0, 0.0), d), 1);
+  gl_FragColor = vec4(applyFog(applyLight(vec3(0.6, 1.1, 0.5), vpos, vnorm, 0.8, 1.0), d), 1);
 }

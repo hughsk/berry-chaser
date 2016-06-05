@@ -6,6 +6,13 @@ uniform vec3 viewPos;
 
 #pragma glslify: specular = require('glsl-specular-gaussian')
 
+float calcLightAttenuation(float lightDistance, float cutoffDistance, float decayExponent) {
+  if (decayExponent > 0.0) {
+    return pow(clamp(-lightDistance / cutoffDistance + 1.0, 0.0, 1.0), decayExponent);
+  }
+  return 1.0;
+}
+
 vec3 applyLight(
   vec3 albedo,
   vec3 objectPos,
@@ -21,15 +28,19 @@ vec3 applyLight(
     vec3 viewDir = normalize(pos - viewPos);
     float dif = max(0.0, dot(dir, objectNor));
     float spc = specular(dir, viewDir, objectNor, shininess) * specularity;
+    float att = calcLightAttenuation(length(pos - objectPos), 35.0, 3.9);
 
-    sum += dif * lightCol[i] * albedo;
-    sum += spc * lightCol[i] * specularity;
+    sum += att * dif * lightCol[i] * albedo;
+    sum += att * spc * lightCol[i] * specularity;
   }
 
-  float ambientMag = max(0.0, dot(normalize(vec3(0.3, -0.5, 1)), objectNor));
-  vec3 ambientColor = 0.2 * vec3(1.1, 0.6, 0.9);
+  float ambientMag1 = max(0.0, dot(normalize(vec3(0.3, -0.5, 1)), objectNor));
+  vec3 ambientColor1 = vec3(0.6, 0.4, 0.4);
+  float ambientMag2 = max(0.0, dot(normalize(vec3(0.4, 0.5, 0.1)), objectNor));
+  vec3 ambientColor2 = vec3(0.4, 0.5, 0.7);
 
-  sum += albedo * ambientMag * ambientColor;
+  sum += albedo * ambientMag1 * ambientColor1;
+  sum += albedo * ambientMag2 * ambientColor2;
 
   return sum;
 }

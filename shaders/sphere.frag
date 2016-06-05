@@ -9,8 +9,8 @@ varying vec3 vnorm;
 #pragma glslify: applyFog = require('./_fog')
 
 void main() {
-  float mag = max(0.0, dot(normalize(vec3(0.3, -0.5, 1)), vnorm));
+  float mag = 2.0 * max(0.2, 0.2 + dot(normalize(vec3(0.3, -0.5, 1)), vnorm));
   float d = gl_FragCoord.z / gl_FragCoord.w;
 
-  gl_FragColor = vec4(applyFog(vec3(0.4, 1.1, 0.8) * mag, d), 1);
+  gl_FragColor = vec4(applyFog(vec3(1.2, 0.8, 0.4) * mag, d), 1);
 }
