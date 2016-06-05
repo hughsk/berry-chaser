@@ -8,6 +8,7 @@ const TIME_STEP = 1.0 / 60.0 // seconds
 const MAX_SUB_STEPS = 1
 const GRAVITY = -9.82 * 3
 const TERRAIN_SHAPE = [96, 96]
+const TERRAIN_SHAPE_MINUS_ONE = [TERRAIN_SHAPE[0] - 1, TERRAIN_SHAPE[1] - 1]
 
 const Node = require('scene-tree')
 const scene = Node()
@@ -62,11 +63,12 @@ function start () {
     shape: TERRAIN_SHAPE
   })
 
+  createWater(scene, {
+    scale: TERRAIN_SHAPE_MINUS_ONE[0]
+  })
+
   createBoundary(scene, {
-    shape: [
-      TERRAIN_SHAPE[0] - 1,
-      TERRAIN_SHAPE[1] - 1
-    ]
+    shape: TERRAIN_SHAPE_MINUS_ONE
   })
 
   const body = new CANNON.Body({
