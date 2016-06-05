@@ -26,6 +26,7 @@
     "gl-shader": "^4.2.0",
     "glslify": "^5.0.2",
     "icosphere": "^1.0.0",
+    "key-pressed": "0.0.1",
     "primitive-cube": "^2.0.0",
     "scene-tree": "^2.0.1",
     "shortid": "^2.2.6",
