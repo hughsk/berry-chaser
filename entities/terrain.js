@@ -8,7 +8,7 @@ const Node = require('scene-tree')
 const CANNON = require('cannon')
 
 module.exports = function createTerrain (scene, options = {}) {
-  const data = []
+  let data = []
   const w = options.shape[0]
   const h = options.shape[1]
   const plane = Plane(w - 1, h - 1, w - 1, h - 1)
@@ -18,10 +18,12 @@ module.exports = function createTerrain (scene, options = {}) {
     for (var y = 0; y < h; y++) {
       var height = 0
 
-      height += simplex.noise2D(x * 0.03, y * 0.03) * 5.2
-      height += simplex.noise2D(x * 0.1, y * 0.1) * 1.75
-      height += simplex.noise2D(x * 3.1, y * 3.1) * 0.2
+      //height += (1 + simplex.noise2D(x * 0.03, y * 0.03)) * 5.2
+      //height += (1 + simplex.noise2D(x * 0.1, y * 0.1)) * 1.75
+      //height += (1 + simplex.noise2D(x * 3.1, y * 3.1)) * 0.2
 
+      // height += 2 + Math.sin(x) // works
+      height += 2 + Math.sin(y) // not works
       row.push(height)
     }
     data.push(row)
@@ -33,6 +35,8 @@ module.exports = function createTerrain (scene, options = {}) {
     var x = Math.min(w - 1, Math.floor(u[0] * w))
     var y = Math.min(h - 1, Math.floor(u[1] * h))
 
+    p[0] += (w - 1) / 2
+    p[1] += 2.5 + (h - 1) / 2
     p[2] = data[x][y]
   }
 
@@ -50,14 +54,14 @@ module.exports = function createTerrain (scene, options = {}) {
   })
   const hfBody = new CANNON.Body({ mass: 0 })
   hfBody.addShape(hfShape)
-  hfBody.position.set(w * -0.5, h * -0.5, 0)
+  hfBody.position.set(-w/2, -h/2, 0)
   world.addBody(hfBody)
-
-  scene.add(Node({
+  const n = Node({
     geom: createGeom(scene.gl, plane),
     shader: scene.shaders.plain,
     body: hfBody
-  }))
+  })
+  scene.add(n)
 }
 
 function createGeom (gl, complex) {

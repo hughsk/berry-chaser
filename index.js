@@ -50,14 +50,14 @@ function start () {
 
   scene.add(Node({ light: [1, 0, 0] }))
 
-  const playerModel = createSphere(scene, { position: [3, 3, 1], mass: 0.3 })
+  const playerModel = createSphere(scene, { position: [0, 0, 20], mass: 0.3 })
   playerControls.control(playerModel)
 
-  const t1 = createTurret(scene, { player: playerModel, position: [10, 10, 0] })
-  const t2 = createTurret(scene, { player: playerModel, position: [-10, -10, 0] })
+  const t1 = createTurret(scene, { player: playerModel, position: [10, 10, 10] })
+  const t2 = createTurret(scene, { player: playerModel, position: [-10, -10, 10] })
 
-  t1.startFiring()
-  t2.startFiring()
+  //t1.startFiring()
+  //t2.startFiring()
 
   createTerrain(scene, {
     shape: TERRAIN_SHAPE
@@ -68,7 +68,7 @@ function start () {
   })
 
   createBoundary(scene, {
-    shape: TERRAIN_SHAPE_MINUS_ONE
+    shape: TERRAIN_SHAPE
   })
 
   const body = new CANNON.Body({
