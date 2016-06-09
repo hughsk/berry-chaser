@@ -20,6 +20,7 @@ const geoms = scene.geoms = require('./geoms/index')(gl)
 const qrx = require('gl-quat/rotateX')
 const qry = require('gl-quat/rotateY')
 const qrz = require('gl-quat/rotateZ')
+const qid = require('gl-quat/identity')
 const perspective = require('gl-mat4/perspective')
 const PlayerControls = require('./player-controls')
 const createTurret = require('./entities/turret')
@@ -91,12 +92,12 @@ function start () {
     shape: TERRAIN_SHAPE
   })
 
-  for (var i = 0; i < 20; i++) {
+  for (var i = 0; i < 40; i++) {
     var size = 0.2 + Math.random()
     mobs.push(createSphere(scene, {
       radius: size,
       size: size,
-      position: [10 + i % 5, 10 + i - i % 5, 15],
+      position: [10 + i % 5, 10 + i - i % 5, 15 + i],
       mass: 0.5,
       shader: shaders.badguy
     }))
@@ -128,7 +129,10 @@ function step () {
   camera.center[0] = playerControls.player.body.position.x
   camera.center[1] = playerControls.player.body.position.y
   camera.center[2] = playerControls.player.body.position.z
+
   camera.tick()
+  qid(camera.rotation)
+  qrx(camera.rotation, camera.rotation, 0.85)
   camera.view(view)
   eye(view, eyev)
 
@@ -264,8 +268,8 @@ function mobTick () {
   const playerBody = playerControls.player.body
   mobs.forEach(mob => {
     const body = mob.body
-    mob.node.setScale(mob.size + Math.random() * 0.15)
     if (body.position.distanceTo(playerBody.position) < MOB_SIGHT) {
+      mob.node.setScale(mob.size + Math.random() * 0.15)
       mob.target = playerBody.position
       if (Math.random() > 0.99 && body.velocity.z < 5) {
         body.applyImpulse(new CANNON.Vec3(0, 0, 10), body.position)

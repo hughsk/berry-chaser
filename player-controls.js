@@ -2,12 +2,12 @@ const pressed = require('key-pressed')
 const CANNON = require('cannon')
 
 const GRAVITY = -9.82 * 3
-const CONTROL_FORCE = 35
-const AIR_CONTROL = 0.3
+const CONTROL_FORCE = 45
+const AIR_CONTROL = 0.8
 const MAX_VELOCITY = 5
 const JUMP_RANGE = 0.25
 const JUMP_TIMEOUT = 500
-const JUMP_FORCE = -1 * GRAVITY * 0.1
+const JUMP_FORCE = -1 * GRAVITY * 0.2
 
 module.exports = class PlayerControls {
   constructor () {
@@ -51,14 +51,15 @@ module.exports = class PlayerControls {
       if (!c.length) {
         // we are in the air
         force *= AIR_CONTROL
-      } else if (jump && this.jumpWasReleased && !this.jumpBlocked) {
+      }
+      if (jump && this.jumpWasReleased && !this.jumpBlocked) {
         // can jump
         for (let i = 0; i < c.length; i++) {
           const collision = c[i]
           const contactBelow = collision.ni.dot(new CANNON.Vec3(0, 0, -1))
           // ensure has contact below
           if (contactBelow < 1 - JUMP_RANGE || contactBelow > 1 + JUMP_RANGE) continue
-          this.jumpBlocked = true
+          this.jumpBlocked = false
           body.applyImpulse(new CANNON.Vec3(0, 0, JUMP_FORCE), body.position)
           setTimeout(() => {
             this.jumpBlocked = false
