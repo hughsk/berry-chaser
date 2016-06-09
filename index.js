@@ -58,6 +58,7 @@ function start () {
   window.world = world
 
   playerControls = new PlayerControls(world)
+  camera.distance = 25
 
   world.addBody(new CANNON.Body({
     mass: 0,
